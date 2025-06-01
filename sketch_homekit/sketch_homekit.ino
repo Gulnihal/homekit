@@ -31,10 +31,12 @@ const char* ssid = "HONOR";
 const char* password = "misio1234";
 WebServer server(80);
 
-// Statik IP ayarlari (192.168.43.100 → genellikle Android hotspot'lari bu blogu kullanir)
-IPAddress local_IP(192, 168, 43, 100);
-IPAddress gateway(192, 168, 43, 1);
+// Statik IP ayarlari 
+IPAddress local_IP(192, 168, 111, 226);
+IPAddress gateway(192, 168, 111, 202);
 IPAddress subnet(255, 255, 255, 0);
+IPAddress primaryDNS(8, 8, 8, 8);   //optional
+IPAddress secondaryDNS(8, 8, 4, 4); //optional
 
 void IRAM_ATTR detectHeartbeat() {
   pulseCount++;
@@ -61,12 +63,18 @@ void addDataToLog(float temp, float hum, int pulse, int gas) {
 
 void setup() {
   Serial.begin(115200);
+  WiFi.disconnect(true);// Önceki WiFi yapılandırmasını temizle
+  delay(1000);  // Seri haberleşme açılması için küçük bekleme
+  Serial.println("=== Cihaz Basladi ===");
 
   // Statik IP ayarla
-  if (!WiFi.config(local_IP, gateway, subnet)) {
+  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
     Serial.println("⚠️ IP konfigurasyonu basarisiz.");
+  } else {
+    Serial.println("✅ IP konfigurasyonu basarili!");
   }
 
+  //Wifi agina baglan
   WiFi.begin(ssid, password);
   Serial.println("📶 Wi-Fi baglantisi deneniyor...");
 
@@ -77,13 +85,14 @@ void setup() {
     attempt++;
   }
 
+  //SONUC
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\n✅ Wi-Fi baglantisi kuruldu!");
-    Serial.print("IP adresi: ");
-    Serial.println(WiFi.localIP());
   } else {
     Serial.println("\n❌ Baglanti basarisiz!");
   }
+  Serial.print("IP adresi: ");
+  Serial.println(WiFi.localIP());
 
   dht.begin();
   pinMode(buzzer, OUTPUT);
@@ -93,30 +102,6 @@ void setup() {
   strip.show();
 
   attachInterrupt(digitalPinToInterrupt(HEARTBEAT_PIN), detectHeartbeat, RISING);
-
-  // WiFi Access Point modu
-  //WiFi.softAP(ssid, password);
-  //Serial.println("WiFi Access Point Baslatildi.");
-  //Serial.print("IP Adresi: ");
-  //Serial.println(WiFi.softAPIP());
-
-  
-}
-
-void loop() {
-  server.handleClient();
-
-  unsigned long currentTime = millis();
-  if (currentTime - lastPulseTime >= measureInterval) {
-    lastPulseTime = currentTime;
-    pulseRate = pulseCount * (60000 / measureInterval);
-    pulseCount = 0;
-  }
-
-  float temperature = dht.readTemperature();
-  int gaz = analogRead(gaz_sensor);
-
-  addDataToLog(temperature, dht.readHumidity(), pulseRate, gaz);
 
   // Web Server endpointleri
   server.on("/data", HTTP_GET, []() {
@@ -140,12 +125,34 @@ void loop() {
   });
 
   server.begin();
+}
 
-  if (temperature >= 30 || gaz >= 65) {
+void loop() {
+  server.handleClient();
+
+  unsigned long currentTime = millis();
+  if (currentTime - lastPulseTime >= measureInterval) {
+    lastPulseTime = currentTime;
+    pulseRate = pulseCount * (60000 / measureInterval);
+    pulseCount = 0;
+  }
+
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+  int gaz = analogRead(gaz_sensor);
+
+  addDataToLog(temperature, humidity, pulseRate, gaz);
+
+  if (temperature >= 30 || gaz >= 150) {
     Serial.print("Alarm aktif. ");
+    Serial.print("-> Sicaklik: ");
     Serial.print(temperature);
-    Serial.print(" ");
-    Serial.println(gaz);
+    Serial.print(", Gaz: ");
+    Serial.print(gaz);
+    Serial.print(", Nem: ");
+    Serial.print(humidity);
+    Serial.print(", Nabiz: ");
+    Serial.println(pulseRate);
     playMelody();
     delay(5000);
   }
@@ -173,4 +180,4 @@ void playMelody() {
     delay(duration * 1.3);
   }
   noTone(buzzer);
-}
+} 
