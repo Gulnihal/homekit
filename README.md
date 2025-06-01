@@ -75,6 +75,7 @@ npm start
 
 ## 📂 Project Structure (Simplified)
 
+```bash
 homekit_app/
 ├── lib/
 │   ├── pages/
@@ -90,3 +91,4 @@ homekit_app/
 │   └── server.js
 ├── esp32/
 │   └── main.ino
+```
