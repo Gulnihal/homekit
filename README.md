@@ -46,12 +46,15 @@ git clone https://github.com/yourusername/homekit_app.git
 cd homekit_app
 flutter pub get
 flutter run
+```
 
 ### 2. Node.js Backend
 
+```bash
 cd homekit_server
 npm install
 npm start
+```
 
 ### 3. ESP32 Device
 
@@ -59,14 +62,18 @@ npm start
 - On startup, ESP32 opens a SoftAP (e.g., ESP32_Setup)
 - The Flutter app sends Wi-Fi credentials to the ESP32
 
-### 🧪 Sensors & Modules Used
+---
+
+## 🧪 Sensors & Modules Used
 - DHT11 — Temperature & Humidity
 - MQ2 — Gas (LPG, smoke)
 - WS2812 — RGB LED Ring
 - IR Pulse Sensor — Heartbeat monitor
 - Buzzer — Audio alarm
 
-### 📂 Project Structure (Simplified)
+---
+
+## 📂 Project Structure (Simplified)
 
 homekit_app/
 ├── lib/
